@@ -128,9 +128,14 @@ static int dwc2_driver_probe(struct platform_device *dev)
 	if (match && match->data) {
 		params = match->data;
 	} else {
-		/* Default all params to autodetect */
-		dwc2_set_all_params(&defparams, -1);
-		params = &defparams;
+		if (dev->dev.platform_data) {
+			params = dev->dev.platform_data;
+		}
+		else {
+			/* Default all params to autodetect */
+			dwc2_set_all_params(&defparams, -1);
+			params = &defparams;
+		}
 	}
 
 	hsotg = devm_kzalloc(&dev->dev, sizeof(*hsotg), GFP_KERNEL);

@@ -41,3 +41,4 @@ obj-$(CONFIG_S5PV210_SETUP_KEYPAD)	+= setup-keypad.o
 obj-$(CONFIG_S5PV210_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
 obj-$(CONFIG_S5PV210_SETUP_SPI)		+= setup-spi.o
 obj-$(CONFIG_S5PV210_SETUP_USB_PHY) += setup-usb-phy.o
+obj-$(CONFIG_S5PV210_SETUP_USB_PHY2) += setup-usb-phy2.o
