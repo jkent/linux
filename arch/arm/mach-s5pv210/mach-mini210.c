@@ -18,6 +18,7 @@
 #include <linux/serial_core.h>
 #include <linux/device.h>
 #include <linux/dm9000.h>
+#include <linux/fb.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
 
@@ -25,6 +26,8 @@
 #include <asm/mach/map.h>
 #include <asm/setup.h>
 #include <asm/mach-types.h>
+
+#include <video/samsung_fimd.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -38,6 +41,9 @@
 #include <plat/pm.h>
 #include <plat/samsung-time.h>
 #include <plat/clock.h>
+#include <plat/hdmi.h>
+#include <plat/fb.h>
+#include <plat/mfc.h>
 
 #include "common.h"
 
@@ -109,6 +115,7 @@ static struct platform_device mini210_dm9000 = {
 };
 
 static struct platform_device *mini210_devices[] __initdata = {
+	&s3c_device_fb,
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
 	&s3c_device_hsmmc2,
@@ -118,6 +125,18 @@ static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_i2c2,
 	&s3c_device_rtc,
 	&s3c_device_wdt,
+	&s5p_device_fimc0,
+	&s5p_device_fimc1,
+	&s5p_device_fimc2,
+	&s5p_device_fimc_md,
+	&s5p_device_hdmi,
+	&s5p_device_i2c_hdmiphy,
+	&s5p_device_jpeg,
+	&s5p_device_mfc,
+	&s5p_device_mfc_l,
+	&s5p_device_mfc_r,
+	&s5p_device_mixer,
+	&s5p_device_sdo,
 	&mini210_dm9000,
 };
 
@@ -158,6 +177,16 @@ static void __init mini210_map_io(void)
 	samsung_set_timer_source(SAMSUNG_PWM2, SAMSUNG_PWM4);
 }
 
+static void __init mini210_reserve(void)
+{
+	s5p_mfc_reserve_mem(0x43000000, 8 << 20, 0x51000000, 8 << 20);
+}
+
+/* I2C module and id for HDMIPHY */
+static struct i2c_board_info hdmiphy_info = {
+	I2C_BOARD_INFO("hdmiphy-s5pv210", 0x70),
+};
+
 static void __init mini210_machine_init(void)
 {
 	s3c_pm_init();
@@ -172,6 +201,9 @@ static void __init mini210_machine_init(void)
 	i2c_register_board_info(2, mini210_i2c_devs2,
 			ARRAY_SIZE(mini210_i2c_devs2));
 
+	s5p_hdmi_set_platdata(&hdmiphy_info, NULL, 0);
+	s5p_i2c_hdmiphy_set_platdata(NULL);
+
 	mini210_dm9000_init();
 
 	platform_add_devices(mini210_devices, ARRAY_SIZE(mini210_devices));
@@ -185,4 +217,5 @@ MACHINE_START(MINI210, "MINI210")
 	.init_machine	= mini210_machine_init,
 	.init_time	= samsung_timer_init,
 	.restart	= s5pv210_restart,
+	.reserve	= &mini210_reserve,
 MACHINE_END

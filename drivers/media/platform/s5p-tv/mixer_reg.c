@@ -276,6 +276,7 @@ static void mxr_irq_layer_handle(struct mxr_layer *layer)
 		layer->update_buf = next;
 	}
 
+	v4l2_get_timestamp(&done->vb.v4l2_buf.timestamp);
 	layer->ops.buffer_set(layer, layer->update_buf);
 
 	if (done && done != layer->shadow_buf)
