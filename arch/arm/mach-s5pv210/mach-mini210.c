@@ -20,6 +20,10 @@
 #include <linux/dm9000.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
+#include <linux/leds.h>
+#include <linux/gpio_keys.h>
+#include <linux/input.h>
+#include <uapi/linux/input.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -108,6 +112,86 @@ static struct platform_device mini210_dm9000 = {
 	},
 };
 
+/* leds			*/
+
+static struct gpio_led mini210_led_pins[] = {
+	{
+		.name			= "mini210:green:led1",
+		.gpio			= S5PV210_GPJ2(0),
+		.active_low		= 1,
+		.default_trigger	= "heartbeat",
+	},
+	{
+		.name			= "mini210:green:led2",
+		.gpio			= S5PV210_GPJ2(1),
+		.active_low		= 1,
+		.default_trigger	= "nand-disk",
+	},
+	{
+		.name			= "mini210:green:led3",
+		.gpio			= S5PV210_GPJ2(2),
+		.active_low		= 1,
+		.default_trigger	= "mmc0",
+	},
+	{
+		.name			= "mini210:green:led4",
+		.gpio			= S5PV210_GPJ2(3),
+		.active_low		= 1,
+		.default_trigger	= "",
+	},
+};
+
+static struct gpio_led_platform_data mini210_led_data = {
+	.num_leds	= ARRAY_SIZE(mini210_led_pins),
+	.leds		= mini210_led_pins,
+};
+
+static struct platform_device mini210_leds = {
+	.name			= "leds-gpio",
+	.id			= -1,
+	.dev.platform_data	= &mini210_led_data,
+};
+
+/* buttons		*/
+
+static struct gpio_keys_button mini210_gpio_keys[] = {
+	{
+		.code		= KEY_ESC,
+		.gpio		= S5PV210_GPH2(0),
+		.active_low	= 1,
+		.desc		= "button1",
+	},
+	{
+		.code 		= KEY_ENTER,
+		.gpio		= S5PV210_GPH2(1),
+		.active_low	= 1,
+		.desc		= "button2",
+	},
+	{
+		.code 		= KEY_DOWN,
+		.gpio		= S5PV210_GPH2(2),
+		.active_low	= 1,
+		.desc		= "button3",
+	},
+	{
+		.code 		= KEY_UP,
+		.gpio		= S5PV210_GPH2(3),
+		.active_low	= 1,
+		.desc		= "button4",
+	},
+};
+
+static struct gpio_keys_platform_data mini210_gpio_keys_data = {
+	.buttons	= mini210_gpio_keys,
+	.nbuttons	= ARRAY_SIZE(mini210_gpio_keys),
+};
+
+static struct platform_device mini210_gpio_keys_device = {
+	.name			= "gpio-keys",
+	.id			= -1,
+	.dev.platform_data	= &mini210_gpio_keys_data,
+};
+
 static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
@@ -119,6 +203,8 @@ static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_rtc,
 	&s3c_device_wdt,
 	&mini210_dm9000,
+	&mini210_leds,
+	&mini210_gpio_keys_device,
 };
 
 static void __init mini210_dm9000_init(void)
