@@ -84,6 +84,7 @@ static const struct dwc2_core_params dwc2_module_params = {
 	.ts_dline			= -1,
 	.reload_ctl			= -1,
 	.ahbcfg				= -1,
+	.uframe_sched			= -1,
 };
 
 /**
@@ -151,7 +152,7 @@ static int dwc2_driver_probe(struct pci_dev *dev,
 	return retval;
 }
 
-static DEFINE_PCI_DEVICE_TABLE(dwc2_pci_ids) = {
+static const struct pci_device_id dwc2_pci_ids[] = {
 	{
 		PCI_DEVICE(PCI_VENDOR_ID_SYNOPSYS, PCI_PRODUCT_ID_HAPS_HSOTG),
 	},
