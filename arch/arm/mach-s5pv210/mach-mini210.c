@@ -24,12 +24,15 @@
 #include <linux/gpio_keys.h>
 #include <linux/input.h>
 #include <uapi/linux/input.h>
+#include <linux/fb.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 #include <asm/setup.h>
 #include <asm/mach-types.h>
 
+#include <video/platform_lcd.h>
+#include <video/samsung_fimd.h>
 #include <mach/map.h>
 #include <mach/regs-clock.h>
 
@@ -42,8 +45,11 @@
 #include <plat/pm.h>
 #include <plat/samsung-time.h>
 #include <plat/clock.h>
+#include <plat/fb.h>
 
 #include "common.h"
+
+struct s3c_fb_platdata *mini210_get_lcd(void);
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
 #define MINI210_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
@@ -58,6 +64,7 @@
 #define MINI210_UFCON_DEFAULT	(S3C2410_UFCON_FIFOMODE |	\
 				 S5PV210_UFCON_TXTRIG4 |	\
 				 S5PV210_UFCON_RXTRIG4)
+
 
 static struct s3c2410_uartcfg mini210_uartcfgs[] __initdata = {
 	[0] = {
@@ -192,7 +199,28 @@ static struct platform_device mini210_gpio_keys_device = {
 	.dev.platform_data	= &mini210_gpio_keys_data,
 };
 
+/* lcd/framebuffer	 */
+
+static void mini210_lcd_set_power(struct plat_lcd_data *pd,
+					unsigned int power)
+{
+	gpio_request(S5PV210_GPD0(1), "GPD0");
+	gpio_direction_output(S5PV210_GPD0(1), power);
+	gpio_free(S5PV210_GPD0(1));
+}
+
+static struct plat_lcd_data mini210_lcd_platform_data = {
+	.set_power	= mini210_lcd_set_power,
+};
+
+static struct platform_device mini210_lcd_platform_device = {
+	.name			= "platform-lcd",
+	.dev.parent		= &s3c_device_fb.dev,
+	.dev.platform_data	= &mini210_lcd_platform_data,
+};
+
 static struct platform_device *mini210_devices[] __initdata = {
+	&s3c_device_fb,
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
 	&s3c_device_hsmmc2,
@@ -205,6 +233,7 @@ static struct platform_device *mini210_devices[] __initdata = {
 	&mini210_dm9000,
 	&mini210_leds,
 	&mini210_gpio_keys_device,
+	&mini210_lcd_platform_device,
 };
 
 static void __init mini210_dm9000_init(void)
@@ -223,6 +252,16 @@ static void __init mini210_dm9000_init(void)
 	tmp |= (1 << S5P_SROM_BW__NCS1__SHIFT);
 	__raw_writel(tmp, S5P_SROM_BW);
 }
+
+static void __init mini210_lcd_init(void)
+{
+	static struct s3c_fb_platdata *pdata;
+
+	pdata = mini210_get_lcd();
+	if(pdata){
+		s3c_fb_set_platdata(pdata);
+	}
+};
 
 static struct i2c_board_info mini210_i2c_devs0[] __initdata = {
 	{ I2C_BOARD_INFO("24c08", 0x50), },     /* Atmel AT24C04 */
@@ -259,6 +298,7 @@ static void __init mini210_machine_init(void)
 			ARRAY_SIZE(mini210_i2c_devs2));
 
 	mini210_dm9000_init();
+	mini210_lcd_init();
 
 	platform_add_devices(mini210_devices, ARRAY_SIZE(mini210_devices));
 }
