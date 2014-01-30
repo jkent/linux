@@ -617,7 +617,7 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
 				/* case 3 << MUSB_DEVCTL_VBUS_SHIFT: */
 				default:
 					s = "VALID"; break;
-				}; s; }),
+				} s; }),
 				VBUSERR_RETRY_COUNT - musb->vbuserr_retry,
 				musb->port1_status);
 
@@ -1809,9 +1809,6 @@ static void musb_free(struct musb *musb)
 			disable_irq_wake(musb->nIrq);
 		free_irq(musb->nIrq, musb);
 	}
-	cancel_work_sync(&musb->irq_work);
-	if (musb->dma_controller)
-		dma_controller_destroy(musb->dma_controller);
 
 	musb_host_free(musb);
 }
@@ -1886,12 +1883,20 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 
 	pm_runtime_get_sync(musb->controller);
 
-	if (use_dma && dev->dma_mask)
+	if (use_dma && dev->dma_mask) {
 		musb->dma_controller = dma_controller_create(musb, musb->mregs);
+		if (IS_ERR(musb->dma_controller)) {
+			status = PTR_ERR(musb->dma_controller);
+			goto fail2_5;
+		}
+	}
 
 	/* be sure interrupts are disabled before connecting ISR */
 	musb_platform_disable(musb);
 	musb_generic_disable(musb);
+
+	/* Init IRQ workqueue before request_irq */
+	INIT_WORK(&musb->irq_work, musb_irq_work);
 
 	/* setup musb parts of the core (especially endpoints) */
 	status = musb_core_init(plat->config->multipoint
@@ -1901,9 +1906,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 		goto fail3;
 
 	setup_timer(&musb->otg_timer, musb_otg_timer_func, (unsigned long) musb);
-
-	/* Init IRQ workqueue before request_irq */
-	INIT_WORK(&musb->irq_work, musb_irq_work);
 
 	/* attach to the IRQ */
 	if (request_irq(nIrq, musb->isr, 0, dev_name(dev), musb)) {
@@ -1978,8 +1980,10 @@ fail4:
 	musb_host_cleanup(musb);
 
 fail3:
+	cancel_work_sync(&musb->irq_work);
 	if (musb->dma_controller)
 		dma_controller_destroy(musb->dma_controller);
+fail2_5:
 	pm_runtime_put_sync(musb->controller);
 
 fail2:
@@ -2036,6 +2040,10 @@ static int musb_remove(struct platform_device *pdev)
 	musb_exit_debugfs(musb);
 	musb_shutdown(pdev);
 
+	if (musb->dma_controller)
+		dma_controller_destroy(musb->dma_controller);
+
+	cancel_work_sync(&musb->irq_work);
 	musb_free(musb);
 	device_init_wakeup(dev, 0);
 	return 0;

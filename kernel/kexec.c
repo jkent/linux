@@ -924,7 +924,7 @@ static int kimage_load_segment(struct kimage *image,
  *   reinitialize them.
  *
  * - A machine specific part that includes the syscall number
- *   and the copies the image to it's final destination.  And
+ *   and then copies the image to it's final destination.  And
  *   jumps into the image at entry.
  *
  * kexec does not sync, or unmount filesystems so if you need
@@ -1680,6 +1680,7 @@ int kernel_kexec(void)
 	{
 		kexec_in_progress = true;
 		kernel_restart_prepare(NULL);
+		migrate_to_reboot_cpu();
 		printk(KERN_EMERG "Starting new kernel\n");
 		machine_shutdown();
 	}
