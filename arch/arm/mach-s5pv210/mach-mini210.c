@@ -39,6 +39,7 @@
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <linux/platform_data/i2c-s3c2410.h>
+#include <linux/platform_data/usb-ehci-s5p.h>
 #include <plat/pm.h>
 #include <plat/samsung-time.h>
 #include <plat/clock.h>
@@ -192,6 +193,9 @@ static struct platform_device mini210_gpio_keys_device = {
 	.dev.platform_data	= &mini210_gpio_keys_data,
 };
 
+/* USB Host */
+static struct s5p_ehci_platdata mini210_ehci_pdata;
+
 static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
@@ -202,6 +206,8 @@ static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_i2c2,
 	&s3c_device_rtc,
 	&s3c_device_wdt,
+	&s5p_device_ehci,
+	&s5p_device_ohci,
 	&mini210_dm9000,
 	&mini210_leds,
 	&mini210_gpio_keys_device,
@@ -259,6 +265,8 @@ static void __init mini210_machine_init(void)
 			ARRAY_SIZE(mini210_i2c_devs2));
 
 	mini210_dm9000_init();
+
+	s5p_ehci_set_platdata(&mini210_ehci_pdata);
 
 	platform_add_devices(mini210_devices, ARRAY_SIZE(mini210_devices));
 }
