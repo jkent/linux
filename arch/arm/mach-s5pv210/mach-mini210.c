@@ -46,6 +46,11 @@
 #include <plat/samsung-time.h>
 #include <plat/clock.h>
 
+#include <linux/clk.h>
+#include <plat/usb-phy.h>
+
+#include "../../../drivers/staging/dwc2/core.h"
+
 #include "common.h"
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
@@ -219,6 +224,47 @@ static struct platform_device mini210_ohci = {
 	},
 };
 
+static struct dwc2_core_params mini210_dwc2_pdata = {
+	.otg_cap			= 0,	/* HNP/SRP capable */
+	.otg_ver			= 0,	/* 1.3 */
+	.dma_enable			= 1,
+	.dma_desc_enable		= 0,
+	.speed				= 0,	/* High Speed */
+	.enable_dynamic_fifo		= 1,
+	.en_multiple_tx_fifo		= 1,
+	.host_rx_fifo_size		= 2048,	/* 2048 DWORDs */
+	.host_nperio_tx_fifo_size	= 1024,	/* 1024 DWORDs */
+	.host_perio_tx_fifo_size	= 1024,	/* 1024 DWORDs */
+	.max_transfer_size		= 65535,
+	.max_packet_count		= 1023,
+	.host_channels			= 16,
+	.phy_type			= 1,	/* UTMI */
+	.phy_utmi_width			= 16,	/* 16 bits */
+	.phy_ulpi_ddr			= 0,	/* Single */
+	.phy_ulpi_ext_vbus		= 0,
+	.i2c_enable			= 0,
+	.ulpi_fs_ls			= 0,
+	.host_support_fs_ls_low_power	= 0,
+	.host_ls_low_power_phy_clk	= 0,	/* 48 MHz */
+	.ts_dline			= 0,
+	.reload_ctl			= 0,
+	.ahbcfg				= 0x10,
+	.uframe_sched			= 0,
+};
+
+static struct resource mini210_dwc2_resources[] = {
+	[0] = DEFINE_RES_MEM(S3C_PA_USB_HSOTG, SZ_128K),
+	[1] = DEFINE_RES_IRQ(IRQ_OTG),
+};
+
+struct platform_device mini210_dwc2_device = {
+	.name		= "dwc2",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(mini210_dwc2_resources),
+	.resource	= mini210_dwc2_resources,
+	.dev.platform_data = &mini210_dwc2_pdata,
+};
+
 static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
@@ -228,13 +274,14 @@ static struct platform_device *mini210_devices[] __initdata = {
 	&s3c_device_i2c1,
 	&s3c_device_i2c2,
 	&s3c_device_rtc,
-	&s3c_device_usb_hsotg,
+	//&s3c_device_usb_hsotg,
 	&s3c_device_wdt,
 	&s5p_device_ehci,
 	&mini210_dm9000,
 	&mini210_leds,
 	&mini210_gpio_keys_device,
 	&mini210_ohci,
+	&mini210_dwc2_device,
 };
 
 static void __init mini210_dm9000_init(void)
@@ -276,6 +323,8 @@ static void __init mini210_map_io(void)
 
 static void __init mini210_machine_init(void)
 {
+	struct clk *otg_clk;
+
 	s3c_pm_init();
 
 	s3c_i2c0_set_platdata(NULL);
@@ -292,8 +341,14 @@ static void __init mini210_machine_init(void)
 	s3c_hsotg_set_platdata(&mini210_hsotg_pdata);
 	s5p_ehci_set_platdata(&mini210_ehci_pdata);
 
+	s5p_usb_phy_init(&s3c_device_usb_hsotg, 0);
+	otg_clk = clk_get_sys("dwc2", "otg");
+	if (!IS_ERR(otg_clk))
+		clk_enable(otg_clk);
+
 	platform_add_devices(mini210_devices, ARRAY_SIZE(mini210_devices));
 }
+
 
 MACHINE_START(MINI210, "MINI210")
 	/* Maintainer: Jeff Kent <jeff@jkent.net> */

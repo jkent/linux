@@ -271,10 +271,14 @@ static void dwc2_release_channel_ddma(struct dwc2_hsotg *hsotg,
 {
 	struct dwc2_host_chan *chan = qh->channel;
 
-	if (dwc2_qh_is_non_per(qh))
-		hsotg->non_periodic_channels--;
-	else
+	if (dwc2_qh_is_non_per(qh)) {
+		if (hsotg->core_params->uframe_sched > 0)
+			hsotg->available_host_channels++;
+		else
+			hsotg->non_periodic_channels--;
+	} else {
 		dwc2_update_frame_list(hsotg, qh, 0);
+	}
 
 	/*
 	 * The condition is added to prevent double cleanup try in case of
@@ -370,7 +374,8 @@ void dwc2_hcd_qh_free_ddma(struct dwc2_hsotg *hsotg, struct dwc2_qh *qh)
 
 	if ((qh->ep_type == USB_ENDPOINT_XFER_ISOC ||
 	     qh->ep_type == USB_ENDPOINT_XFER_INT) &&
-	    !hsotg->periodic_channels && hsotg->frame_list) {
+	    (hsotg->core_params->uframe_sched > 0 ||
+	     !hsotg->periodic_channels) && hsotg->frame_list) {
 		dwc2_per_sched_disable(hsotg);
 		dwc2_frame_list_free(hsotg);
 	}
@@ -616,8 +621,8 @@ static void dwc2_fill_host_dma_desc(struct dwc2_hsotg *hsotg,
 	struct dwc2_hcd_dma_desc *dma_desc = &qh->desc_list[n_desc];
 	int len = chan->xfer_len;
 
-	if (len > MAX_DMA_DESC_SIZE)
-		len = MAX_DMA_DESC_SIZE - chan->max_packet + 1;
+	if (len > MAX_DMA_DESC_SIZE - (chan->max_packet - 1))
+		len = MAX_DMA_DESC_SIZE - (chan->max_packet - 1);
 
 	if (chan->ep_is_in) {
 		int num_packets;
@@ -1098,8 +1103,10 @@ static void dwc2_complete_non_isoc_xfer_ddma(struct dwc2_hsotg *hsotg,
 		for (i = 0; i < qtd->n_desc; i++) {
 			if (dwc2_process_non_isoc_desc(hsotg, chan, chnum, qtd,
 						       desc_num, halt_status,
-						       &xfer_done))
+						       &xfer_done)) {
+				qtd = NULL;
 				break;
+			}
 			desc_num++;
 		}
 	}

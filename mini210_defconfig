@@ -1395,7 +1395,7 @@ CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS=2
 # CONFIG_USB_FOTG210_UDC is not set
 # CONFIG_USB_R8A66597 is not set
 # CONFIG_USB_PXA27X is not set
-CONFIG_USB_S3C_HSOTG=y
+CONFIG_USB_S3C_HSOTG=m
 # CONFIG_USB_MV_UDC is not set
 # CONFIG_USB_MV_U3D is not set
 # CONFIG_USB_M66592 is not set
@@ -1565,7 +1565,39 @@ CONFIG_DMA_ENGINE=y
 #
 # Microsoft Hyper-V guest support
 #
-# CONFIG_STAGING is not set
+CONFIG_STAGING=y
+# CONFIG_USBIP_CORE is not set
+# CONFIG_ECHO is not set
+# CONFIG_COMEDI is not set
+# CONFIG_RTS5139 is not set
+# CONFIG_TRANZPORT is not set
+# CONFIG_ZSMALLOC is not set
+# CONFIG_USB_ENESTORAGE is not set
+# CONFIG_BCM_WIMAX is not set
+# CONFIG_FT1000 is not set
+
+#
+# Speakup console speech
+#
+# CONFIG_SPEAKUP is not set
+# CONFIG_TOUCHSCREEN_CLEARPAD_TM1217 is not set
+# CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4 is not set
+# CONFIG_STAGING_MEDIA is not set
+
+#
+# Android
+#
+# CONFIG_ANDROID is not set
+# CONFIG_USB_WPAN_HCD is not set
+# CONFIG_WIMAX_GDM72XX is not set
+# CONFIG_LTE_GDM724X is not set
+# CONFIG_CED1401 is not set
+# CONFIG_DGRP is not set
+CONFIG_USB_DWC2=m
+# CONFIG_USB_DWC2_DEBUG is not set
+# CONFIG_USB_DWC2_TRACK_MISSED_SOFS is not set
+# CONFIG_LUSTRE_FS is not set
+# CONFIG_DGAP is not set
 CONFIG_CLKDEV_LOOKUP=y
 
 #
